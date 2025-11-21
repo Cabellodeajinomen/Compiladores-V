@@ -2,17 +2,14 @@
 #include <stdio.h>
 #include <string.h>
 #include "tokens.h"
-
-// yyin ya es visible
 %}
 
 %%
 
-[ \t\r]+                ;   // ignorar espacios y tabs
+[ \t\r]+                ;
 
 \n                      { return TK_NL; }
 
-// palabras clave
 "fun"                   { return TK_FUN; }
 "if"                    { return TK_IF; }
 "else"                  { return TK_ELSE; }
@@ -34,7 +31,6 @@
 "or"                    { return TK_OR; }
 "not"                   { return TK_NOT; }
 
-// operadores
 "=="                    { return TK_EQ; }
 "<>"                    { return TK_NEQ; }
 "<="                    { return TK_LE; }
@@ -43,29 +39,25 @@
 ">"                     { return TK_GT; }
 
 "="                     { return TK_ASSIGN; }
-"\+"                    { return TK_PLUS; }
+"+"                     { return TK_PLUS; }
 "-"                     { return TK_MINUS; }
-"\*"                   { return TK_MUL; }
+"*"                     { return TK_MUL; }
 "/"                     { return TK_DIV; }
 
 "("                     { return TK_LPAREN; }
 ")"                     { return TK_RPAREN; }
-"\["                    { return TK_LBRACKET; }
-"\]"                    { return TK_RBRACKET; }
+"["                     { return TK_LBRACKET; }
+"]"                     { return TK_RBRACKET; }
 
 ":"                     { return TK_COLON; }
 ","                     { return TK_COMMA; }
 
-// literales numericos
 [0-9]+                  { return TK_LITNUM; }
 
-// literales string: "cualquier cosa menos comillas"
 \"([^\"\\]|\\.)*\"     { return TK_LITSTRING; }
 
-// identificadores
 [a-zA-Z_][a-zA-Z0-9_]*  { return TK_ID; }
 
-// cualquier otra cosa es error
 .                       { return TK_ERROR; }
 
 %%

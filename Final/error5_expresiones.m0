@@ -1,0 +1,6 @@
+fun main()
+    x : int
+    x = 10 + * 3    // ERROR: operador doble no valido
+
+    return x
+end

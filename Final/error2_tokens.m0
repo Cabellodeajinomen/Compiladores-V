@@ -1,0 +1,7 @@
+fun main()
+    x : int
+
+    x = 10 & 5   // ERROR: & no es un token permitido
+
+    return x
+end

@@ -1,0 +1,17 @@
+fun crearArreglo(n : int) : int
+    a : [ ] int
+
+    a = new [ n ] int
+    return a
+end
+
+fun main()
+    x : int
+    arr : [ ] int
+
+    arr = crearArreglo(10)
+
+    x = arr[0] + 5
+
+    return x
+end

@@ -1,0 +1,13 @@
+fun main()
+    x : int
+    y : int
+
+    x = 10
+    y = 20
+
+    if x < y
+        x = x +      // ERROR: falta expresion
+    end
+
+    return x
+end

@@ -1,0 +1,13 @@
+fun procesar(nombre : string) : string
+    mensaje : string
+
+    if nombre = "Alex"
+        mensaje = "Hola Alex"
+    else if nombre = "Bryan"
+        mensaje = "Hola Bryan"
+    else
+        mensaje = "Desconocido"
+    end
+
+    return mensaje
+end

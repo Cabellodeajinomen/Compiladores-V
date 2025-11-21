@@ -1,0 +1,17 @@
+fun main() : int
+    x : int
+    y : int
+
+    x = 5
+    y = 10
+
+    if x < y
+        x = x + 1
+    end
+
+    while x < 20
+        x = x + 2
+    loop
+
+    return x
+end

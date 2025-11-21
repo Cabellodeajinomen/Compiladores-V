@@ -1,6 +1,5 @@
 %{
 #include <stdio.h>
-#include <string.h>
 #include "tokens.h"
 %}
 
@@ -54,7 +53,7 @@
 
 [0-9]+                  { return TK_LITNUM; }
 
-\"([^\"\\]|\\.)*\"     { return TK_LITSTRING; }
+\"([^"\\]|\\.)*\"   { return TK_LITSTRING; }
 
 [a-zA-Z_][a-zA-Z0-9_]*  { return TK_ID; }
 
@@ -62,6 +61,4 @@
 
 %%
 
-int yywrap() {
-    return 1;
-}
+int yywrap() { return 1; }

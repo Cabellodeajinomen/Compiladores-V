@@ -1,16 +1,28 @@
 #include <iostream>
+#include <string>
 #include "parser.h"
 
 using namespace std;
 
 int main(int argc, char* argv[]) {
-    if (argc < 2) {
-        cerr << "Uso: " << argv[0] << " archivo.m0" << endl;
+    bool trace = false;
+    const char* filename = nullptr;
+
+    if (argc == 2) {
+        filename = argv[1];
+    } else if (argc == 3 && string(argv[1]) == "--trace") {
+        trace = true;
+        filename = argv[2];
+    } else {
+        cerr << "Uso: " << argv[0] << " [--trace] archivo.m0" << endl;
         return 1;
     }
 
     Parser p;
-    p.parse(argv[1]);
+    if (trace)
+        p.setTrace(true);
+
+    p.parse(filename);
 
     return 0;
 }

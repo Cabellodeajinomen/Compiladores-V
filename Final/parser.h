@@ -15,13 +15,22 @@ extern FILE* yyin;
 
 class Parser {
 public:
+    Parser();
     void parse(const string& filename);
+    void setTrace(bool enable);
 
 private:
     int currentToken; // aqui guardamos el tipo de token actual (TokenType)
+    int lookaheadToken; // buffer para lookahead simple
+    bool hasLookahead;
+    bool trace;
+    std::string currentLexeme;
+    std::string lookaheadLexeme;
 
     void nextToken();
+    int peekToken();
     void match(int expected);
+    void skipNL();
 
     // No terminales principales
     void programa();
@@ -79,6 +88,8 @@ private:
     bool is_type_start();
     bool is_decl_start();
     bool is_comando_start();
+
+    const char* tokenName(int token) const;
 };
 
 #endif

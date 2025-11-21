@@ -1,333 +1,371 @@
 #include "parser.h"
+using namespace std;
 
-void Parser::parse(const string& filename) {
-    yyin = fopen(filename.c_str(), "r");
-    if (!yyin) {
-        cerr << "No se pudo abrir el archivo: " << filename << endl;
-        exit(1);
-    }
+Parser::Parser()
+    : currentToken(TK_EOF),
+      lookaheadToken(TK_EOF),
+      hasLookahead(false),
+      trace(false) {}
 
-    nextToken();      // leemos el primer token
-    programa();       // simbolo inicial
-
-    if (currentToken != TK_EOF) {
-        cerr << "Error sintactico: tokens extra despues del final en linea "
-             << yylineno << endl;
-        exit(1);
-    }
-
-    cout << "Analisis sintactico exitoso" << endl;
-    fclose(yyin);
+void Parser::setTrace(bool enable) {
+    trace = enable;
 }
 
+/* obtiene siguiente token */
 void Parser::nextToken() {
-    currentToken = yylex();
-    if (currentToken == 0) {
-        currentToken = TK_EOF;
+    if (hasLookahead) {
+        currentToken = lookaheadToken;
+        currentLexeme = lookaheadLexeme;
+        hasLookahead = false;
+    } else {
+        currentToken = yylex();
+        if (currentToken == 0)
+            currentToken = TK_EOF;
+        currentLexeme = yytext ? yytext : "";
+    }
+
+    if (currentToken == TK_EOF)
+        currentLexeme.clear();
+
+    if (trace) {
+        cout << "[TOKEN] " << tokenName(currentToken) << " -> ";
+        if (currentToken == TK_EOF) {
+            cout << "<EOF>";
+        } else if (currentToken == TK_NL) {
+            cout << "\\n";
+        } else {
+            cout << currentLexeme;
+        }
+        cout << endl;
     }
 }
 
-void Parser::match(int expected) {
-    if (currentToken == expected) {
+/* mira el proximo token sin consumirlo */
+int Parser::peekToken() {
+    if (!hasLookahead) {
+        lookaheadToken = yylex();
+        if (lookaheadToken == 0)
+            lookaheadToken = TK_EOF;
+        lookaheadLexeme = yytext ? yytext : "";
+        hasLookahead = true;
+    }
+    return lookaheadToken;
+}
+
+/* salta saltos de linea */
+void Parser::skipNL() {
+    while (currentToken == TK_NL)
         nextToken();
-    } else {
+}
+
+/* verifica token esperado */
+void Parser::match(int expected) {
+    if (currentToken == expected)
+        nextToken();
+    else {
         cerr << "Error sintactico en linea " << yylineno
              << ": se esperaba token " << expected
-             << " y se encontro '" << yytext << "'" << endl;
+             << " y se encontro '" << currentLexeme << "'\n";
         exit(1);
     }
 }
 
-// ------------------ helpers para saber que puede iniciar que ------------------
-
-bool Parser::is_type_start() {
-    return currentToken == TK_INT ||
-           currentToken == TK_BOOL ||
-           currentToken == TK_CHAR ||
-           currentToken == TK_STRING ||
-           currentToken == TK_LBRACKET;
-}
-
+/* helpers */
 bool Parser::is_decl_start() {
     return currentToken == TK_FUN || currentToken == TK_ID;
 }
 
-bool Parser::is_comando_start() {
-    return currentToken == TK_IF ||
-           currentToken == TK_WHILE ||
-           currentToken == TK_RETURN ||
-           currentToken == TK_ID;
+bool Parser::is_type_start() {
+    return currentToken == TK_INT || currentToken == TK_BOOL ||
+           currentToken == TK_CHAR || currentToken == TK_STRING ||
+           currentToken == TK_LBRACKET;
 }
 
-// ------------------ programa y nivel superior ------------------
+bool Parser::is_comando_start() {
+    return currentToken == TK_IF || currentToken == TK_WHILE ||
+           currentToken == TK_RETURN || currentToken == TK_ID;
+}
 
-// programa -> decl decl_list
-void Parser::programa() {
-    if (!is_decl_start()) {
-        cerr << "Error sintactico: se esperaba una declaracion al inicio del programa" << endl;
+const char* Parser::tokenName(int token) const {
+    switch (token) {
+        case TK_ID: return "TK_ID";
+        case TK_LITNUM: return "TK_LITNUM";
+        case TK_LITSTRING: return "TK_LITSTRING";
+        case TK_TRUE: return "TK_TRUE";
+        case TK_FALSE: return "TK_FALSE";
+        case TK_FUN: return "TK_FUN";
+        case TK_IF: return "TK_IF";
+        case TK_ELSE: return "TK_ELSE";
+        case TK_END: return "TK_END";
+        case TK_WHILE: return "TK_WHILE";
+        case TK_LOOP: return "TK_LOOP";
+        case TK_RETURN: return "TK_RETURN";
+        case TK_NEW: return "TK_NEW";
+        case TK_INT: return "TK_INT";
+        case TK_BOOL: return "TK_BOOL";
+        case TK_CHAR: return "TK_CHAR";
+        case TK_STRING: return "TK_STRING";
+        case TK_AND: return "TK_AND";
+        case TK_OR: return "TK_OR";
+        case TK_NOT: return "TK_NOT";
+        case TK_PLUS: return "TK_PLUS";
+        case TK_MINUS: return "TK_MINUS";
+        case TK_MUL: return "TK_MUL";
+        case TK_DIV: return "TK_DIV";
+        case TK_GT: return "TK_GT";
+        case TK_LT: return "TK_LT";
+        case TK_GE: return "TK_GE";
+        case TK_LE: return "TK_LE";
+        case TK_EQ: return "TK_EQ";
+        case TK_NEQ: return "TK_NEQ";
+        case TK_LPAREN: return "TK_LPAREN";
+        case TK_RPAREN: return "TK_RPAREN";
+        case TK_LBRACKET: return "TK_LBRACKET";
+        case TK_RBRACKET: return "TK_RBRACKET";
+        case TK_COLON: return "TK_COLON";
+        case TK_COMMA: return "TK_COMMA";
+        case TK_ASSIGN: return "TK_ASSIGN";
+        case TK_NL: return "TK_NL";
+        case TK_EOF: return "TK_EOF";
+        case TK_ERROR: return "TK_ERROR";
+        default: return "UNKNOWN";
+    }
+}
+
+/* inicio del analisis */
+void Parser::parse(const string& filename) {
+    yyin = fopen(filename.c_str(), "r");
+    if (!yyin) {
+        cerr << "No se pudo abrir archivo\n";
         exit(1);
     }
+
+    hasLookahead = false;
+    lookaheadToken = TK_EOF;
+    lookaheadLexeme.clear();
+    currentLexeme.clear();
+    nextToken();
+    programa();
+
+    if (currentToken != TK_EOF) {
+        cerr << "Error: tokens extra despues del programa\n";
+        exit(1);
+    }
+
+    cout << "Analisis sintactico exitoso\n";
+    fclose(yyin);
+}
+
+/* ---------------- programa ---------------- */
+
+void Parser::programa() {
+    skipNL();
     decl();
     decl_list();
 }
 
-// decl_list -> decl decl_list | epsilon
 void Parser::decl_list() {
+    skipNL();
     while (is_decl_start()) {
         decl();
+        skipNL();
     }
 }
 
-// decl -> funcion | globalDecl
 void Parser::decl() {
-    if (currentToken == TK_FUN) {
-        funcion();
-    } else {
-        globalDecl();
-    }
+    if (currentToken == TK_FUN) funcion();
+    else globalDecl();
 }
 
-// globalDecl -> declvar
+/* ---------------- declaraciones ---------------- */
+
 void Parser::globalDecl() {
     declvar();
 }
 
-// funcion -> 'fun' ID '(' params ')' opt_tipo bloque 'end'
+/* funcion: fun ID() : tipo  NL  bloque  end NL */
 void Parser::funcion() {
     match(TK_FUN);
     match(TK_ID);
     match(TK_LPAREN);
-    params();
     match(TK_RPAREN);
     opt_tipo();
-    bloque();
+
+    // SOLO avanzar si hay salto de linea
+    if (currentToken == TK_NL)
+        nextToken();
+
+    bloque();  // NO pongas skipNL antes
+
     match(TK_END);
+
+    if (currentToken == TK_NL)
+        nextToken();
 }
 
-// opt_tipo -> ':' tipo | epsilon
+/* tipo opcional despues de ':' */
 void Parser::opt_tipo() {
     if (currentToken == TK_COLON) {
         match(TK_COLON);
-        tipo();
+        tipo();     // NO LLAMES nextToken() acá
     }
 }
 
-// bloque -> declvar_list comando_list
+/* bloque = declaraciones + comandos */
 void Parser::bloque() {
+    skipNL();
     declvar_list();
+    skipNL();
     comando_list();
 }
 
-// declvar_list -> declvar declvar_list | epsilon
+/* reconoce declaracion solo si es ID ':' */
 void Parser::declvar_list() {
-    while (currentToken == TK_ID && is_type_start()) {
-        // esta condicion es dificil solo con currentToken,
-        // en un parser real harias un poco de lookahead,
-        // aqui puedes simplificar y asumir que las declvar estan separadas claro
+    while (currentToken == TK_ID && peekToken() == TK_COLON) {
         declvar();
+        skipNL();
     }
 }
 
-// comando_list -> comando comando_list | epsilon
-void Parser::comando_list() {
-    while (is_comando_start()) {
-        comando();
-    }
-}
-
-// ------------------ declaraciones y tipos ------------------
-
-// declvar -> ID ':' tipo
+/* x : int */
 void Parser::declvar() {
     match(TK_ID);
     match(TK_COLON);
     tipo();
 }
 
-// tipo -> tipobase | '[' ']' tipo
+/* tipo */
 void Parser::tipo() {
     if (currentToken == TK_LBRACKET) {
-        // arreglo
         match(TK_LBRACKET);
-        match(TK_RBRACKET);
+        match(TK_RBRACKET);  // << ESTA ES LA CORRECCION
         tipo();
-    } else {
-        tipobase();
-    }
+    } else tipobase();
 }
 
-// tipobase -> 'int' | 'bool' | 'char' | 'string'
 void Parser::tipobase() {
-    if (currentToken == TK_INT ||
-        currentToken == TK_BOOL ||
-        currentToken == TK_CHAR ||
-        currentToken == TK_STRING) {
+    if (is_type_start())
         nextToken();
-    } else {
-        cerr << "Error sintactico en linea " << yylineno
-             << ": se esperaba un tipo base" << endl;
+    else {
+        cerr << "Error: tipo base esperado\n";
         exit(1);
     }
 }
 
-// params -> epsilon | parametro params_tail
-void Parser::params() {
-    if (currentToken == TK_ID) {
-        parametro();
-        params_tail();
-    } else {
-        // epsilon
+/* ---------------- comandos ---------------- */
+
+void Parser::comando_list() {
+    skipNL();
+    while (is_comando_start()) {
+        comando();
+        skipNL();
     }
 }
 
-// params_tail -> ',' parametro params_tail | epsilon
-void Parser::params_tail() {
-    while (currentToken == TK_COMMA) {
-        match(TK_COMMA);
-        parametro();
-    }
-}
-
-// parametro -> ID ':' tipo
-void Parser::parametro() {
-    match(TK_ID);
-    match(TK_COLON);
-    tipo();
-}
-
-// ------------------ comandos ------------------
-
-// comando -> cmdif | cmdwhile | cmdatrib | cmdreturn | llamada
 void Parser::comando() {
-    if (currentToken == TK_IF) {
-        cmdif();
-    } else if (currentToken == TK_WHILE) {
-        cmdwhile();
-    } else if (currentToken == TK_RETURN) {
-        cmdreturn();
-    } else if (currentToken == TK_ID) {
-        // puede ser asignacion o llamada
-        // lookahead simple: si despues del ID viene '(' es llamada; si no, var '=' exp
-        // aqui lo resolvemos dentro de cmdatrib / llamada
-        // para mantener simple, probamos asignacion asumiendo que el '=' estara luego
-        // si no, consideramos que es llamada
-        // mejor: ver en el lexer un buffer para el siguiente token, pero aqui lo dejamos simple
-        // haremos una decision cuando veamos '=' en cmdatrib
-        // opcion simple: llamamos a cmdatrib si luego hay '='; sino llamada.
-        // aqui solo llamamos a cmdatrib y dentro comprobamos
-        cmdatrib();
-    } else {
-        cerr << "Error sintactico: comando inesperado en linea " << yylineno << endl;
+    if (currentToken == TK_IF) cmdif();
+    else if (currentToken == TK_WHILE) cmdwhile();
+    else if (currentToken == TK_RETURN) cmdreturn();
+    else if (currentToken == TK_ID) cmdatrib();
+    else {
+        cerr << "Error: comando invalido\n";
         exit(1);
     }
 }
 
-// cmdif -> 'if' exp bloque else_if_list opt_else 'end'
+/* if ... end */
 void Parser::cmdif() {
     match(TK_IF);
     exp();
+    skipNL();
+
     bloque();
+    skipNL();
+
     else_if_list();
     opt_else();
+
     match(TK_END);
 }
 
-// else_if_list -> 'else' 'if' exp bloque else_if_list | epsilon
 void Parser::else_if_list() {
     while (currentToken == TK_ELSE) {
-        // ojo: en Mini-0 solo es else if, no else directo aqui
         match(TK_ELSE);
         if (currentToken == TK_IF) {
             match(TK_IF);
             exp();
+            skipNL();
             bloque();
-        } else {
-            // retrocedimos demasiado, esto deberia manejarse
-            // pero para mantener simple, si es solo 'else' salimos y lo gestiona opt_else
-            // en un parser mas formal tendrias una gramatica mas precisa
-            // aqui hacemos un break
-            break;
-        }
+            skipNL();
+        } else return;
     }
 }
 
-// opt_else -> 'else' bloque | epsilon
 void Parser::opt_else() {
     if (currentToken == TK_ELSE) {
         match(TK_ELSE);
+        skipNL();
         bloque();
+        skipNL();
     }
 }
 
-// cmdwhile -> 'while' exp bloque 'loop'
+/* while ... loop */
 void Parser::cmdwhile() {
     match(TK_WHILE);
     exp();
+    skipNL();
     bloque();
+    skipNL();
     match(TK_LOOP);
 }
 
-// cmdatrib -> var '=' exp
+/* return exp? */
+void Parser::cmdreturn() {
+    match(TK_RETURN);
+    if (currentToken != TK_NL &&
+        currentToken != TK_END &&
+        currentToken != TK_ELSE &&
+        currentToken != TK_LOOP &&
+        currentToken != TK_EOF)
+        exp();
+}
+
+/* asignacion o llamada */
 void Parser::cmdatrib() {
-    // primero parseamos una var
-    var();
+    match(TK_ID);
+
+    if (currentToken == TK_LPAREN) {
+        match(TK_LPAREN);
+        listaexp();
+        match(TK_RPAREN);
+        return;
+    }
+
+    var_sufijo();
+
     if (currentToken == TK_ASSIGN) {
         match(TK_ASSIGN);
         exp();
-    } else if (currentToken == TK_LPAREN) {
-        // resulta que era una llamada, no asignacion
-        // esto en realidad ya consumio el ID de la llamada dentro de var,
-        // asi que para un diseño perfecto necesitariamos lookahead de mas de un token.
-        // para dejarlo simple en este trabajo, puedes separar:
-        // - si quieres menor lio: no mezclar var y llamada en el mismo comando,
-        //   o tener una version alternativa de comando para llamada por separado.
-        // aqui solo mostramos idea general.
-        llamada();
-    } else {
-        cerr << "Error sintactico: se esperaba '=' o '(' despues de variable en linea "
-             << yylineno << endl;
+    }
+    else {
+        cerr << "Error: se esperaba '=' o llamada\n";
         exit(1);
     }
 }
 
-// cmdreturn -> 'return' exp | 'return'
-void Parser::cmdreturn() {
-    match(TK_RETURN);
-    // puede haber expresion o no
-    if (currentToken != TK_END &&
-        currentToken != TK_ELSE &&
-        currentToken != TK_LOOP &&
-        currentToken != TK_EOF) {
-        exp();
-    }
-}
-
-// llamada -> ID '(' listaexp ')'
-void Parser::llamada() {
-    match(TK_ID);
-    match(TK_LPAREN);
-    listaexp();
-    match(TK_RPAREN);
-}
-
-// listaexp -> epsilon | exp listaexp_tail
+/* lista de expresiones */
 void Parser::listaexp() {
-    // si el siguiente token puede iniciar una expresion
-    if (currentToken == TK_ID ||
-        currentToken == TK_LITNUM ||
-        currentToken == TK_LITSTRING ||
-        currentToken == TK_TRUE ||
-        currentToken == TK_FALSE ||
-        currentToken == TK_NEW ||
-        currentToken == TK_LPAREN ||
-        currentToken == TK_MINUS ||
+    if (currentToken == TK_ID || currentToken == TK_LITNUM ||
+        currentToken == TK_LITSTRING || currentToken == TK_TRUE ||
+        currentToken == TK_FALSE || currentToken == TK_NEW ||
+        currentToken == TK_LPAREN || currentToken == TK_MINUS ||
         currentToken == TK_NOT) {
         exp();
         listaexp_tail();
     }
 }
 
-// listaexp_tail -> ',' exp listaexp_tail | epsilon
 void Parser::listaexp_tail() {
     while (currentToken == TK_COMMA) {
         match(TK_COMMA);
@@ -335,15 +373,12 @@ void Parser::listaexp_tail() {
     }
 }
 
-// ------------------ variables ------------------
-
-// var -> ID var_sufijo
+/* variable con indices */
 void Parser::var() {
     match(TK_ID);
     var_sufijo();
 }
 
-// var_sufijo -> '[' exp ']' var_sufijo | epsilon
 void Parser::var_sufijo() {
     while (currentToken == TK_LBRACKET) {
         match(TK_LBRACKET);
@@ -352,20 +387,16 @@ void Parser::var_sufijo() {
     }
 }
 
-// ------------------ expresiones con precedencia ------------------
+/* ---------------- expresiones ---------------- */
 
-// exp -> exp_or
-void Parser::exp() {
-    exp_or();
-}
+void Parser::exp() { exp_or(); }
 
-// exp_or -> exp_and exp_or_p
+/* or */
 void Parser::exp_or() {
     exp_and();
     exp_or_p();
 }
 
-// exp_or_p -> 'or' exp_and exp_or_p | epsilon
 void Parser::exp_or_p() {
     while (currentToken == TK_OR) {
         match(TK_OR);
@@ -373,13 +404,12 @@ void Parser::exp_or_p() {
     }
 }
 
-// exp_and -> exp_eq exp_and_p
+/* and */
 void Parser::exp_and() {
     exp_eq();
     exp_and_p();
 }
 
-// exp_and_p -> 'and' exp_eq exp_and_p | epsilon
 void Parser::exp_and_p() {
     while (currentToken == TK_AND) {
         match(TK_AND);
@@ -387,13 +417,12 @@ void Parser::exp_and_p() {
     }
 }
 
-// exp_eq -> exp_rel exp_eq_p
+/* == <> */
 void Parser::exp_eq() {
     exp_rel();
     exp_eq_p();
 }
 
-// exp_eq_p -> ('=' | '<>') exp_rel exp_eq_p | epsilon
 void Parser::exp_eq_p() {
     while (currentToken == TK_EQ || currentToken == TK_NEQ) {
         nextToken();
@@ -401,30 +430,26 @@ void Parser::exp_eq_p() {
     }
 }
 
-// exp_rel -> exp_add exp_rel_p
+/* < <= > >= */
 void Parser::exp_rel() {
     exp_add();
     exp_rel_p();
 }
 
-// exp_rel_p -> ('<' | '<=' | '>' | '>=') exp_add exp_rel_p | epsilon
 void Parser::exp_rel_p() {
-    while (currentToken == TK_LT ||
-           currentToken == TK_LE ||
-           currentToken == TK_GT ||
-           currentToken == TK_GE) {
+    while (currentToken == TK_LT || currentToken == TK_LE ||
+           currentToken == TK_GT || currentToken == TK_GE) {
         nextToken();
         exp_add();
     }
 }
 
-// exp_add -> exp_mul exp_add_p
+/* + - */
 void Parser::exp_add() {
     exp_mul();
     exp_add_p();
 }
 
-// exp_add_p -> ('+' | '-') exp_mul exp_add_p | epsilon
 void Parser::exp_add_p() {
     while (currentToken == TK_PLUS || currentToken == TK_MINUS) {
         nextToken();
@@ -432,13 +457,12 @@ void Parser::exp_add_p() {
     }
 }
 
-// exp_mul -> exp_unary exp_mul_p
+/* * / */
 void Parser::exp_mul() {
     exp_unary();
     exp_mul_p();
 }
 
-// exp_mul_p -> ('*' | '/') exp_unary exp_mul_p | epsilon
 void Parser::exp_mul_p() {
     while (currentToken == TK_MUL || currentToken == TK_DIV) {
         nextToken();
@@ -446,43 +470,36 @@ void Parser::exp_mul_p() {
     }
 }
 
-// exp_unary -> ('-' | 'not') exp_unary | exp_primary
+/* unarios */
 void Parser::exp_unary() {
     if (currentToken == TK_MINUS || currentToken == TK_NOT) {
         nextToken();
         exp_unary();
-    } else {
-        exp_primary();
     }
+    else exp_primary();
 }
 
-// exp_primary -> literales, new, parentesis, var/llamada
+/* primarios */
 void Parser::exp_primary() {
-    if (currentToken == TK_LITNUM) {
-        match(TK_LITNUM);
-    } else if (currentToken == TK_LITSTRING) {
-        match(TK_LITSTRING);
-    } else if (currentToken == TK_TRUE) {
-        match(TK_TRUE);
-    } else if (currentToken == TK_FALSE) {
-        match(TK_FALSE);
-    } else if (currentToken == TK_NEW) {
+    if (currentToken == TK_LITNUM) match(TK_LITNUM);
+    else if (currentToken == TK_LITSTRING) match(TK_LITSTRING);
+    else if (currentToken == TK_TRUE) match(TK_TRUE);
+    else if (currentToken == TK_FALSE) match(TK_FALSE);
+    else if (currentToken == TK_NEW) {
         match(TK_NEW);
         match(TK_LBRACKET);
         exp();
         match(TK_RBRACKET);
         tipo();
-    } else if (currentToken == TK_LPAREN) {
+    }
+    else if (currentToken == TK_LPAREN) {
         match(TK_LPAREN);
         exp();
         match(TK_RPAREN);
-    } else if (currentToken == TK_ID) {
-        // simplificacion: tratamos ID como var
-        // si quieres distinguir llamada, mira si sigue '('
-        var();
-    } else {
-        cerr << "Error sintactico: expresion primaria invalida en linea "
-             << yylineno << endl;
+    }
+    else if (currentToken == TK_ID) var();
+    else {
+        cerr << "Error: expresion invalida\n";
         exit(1);
     }
 }

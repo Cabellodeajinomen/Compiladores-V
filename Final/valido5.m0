@@ -1,0 +1,11 @@
+fun inicializar(m : [ ] [ ] int)
+    m[0][0] = 1
+    m[0][1] = 2
+    return
+end
+
+fun main()
+    matriz : [ ] [ ] int
+    inicializar(matriz)
+    return
+end

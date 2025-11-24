@@ -1,0 +1,9 @@
+fun main()
+    cond : bool
+
+    if cond and             
+        return          // ERROR: falta segundo operador despues del and
+    end
+
+    return
+end

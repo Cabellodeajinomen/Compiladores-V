@@ -1,0 +1,17 @@
+fun combinar(a : int, b : int, flag : bool) : int
+    resultado : int
+
+    if flag and not (a = b)
+        resultado = a + b
+    else
+        resultado = a - b
+    end
+
+    return resultado
+end
+
+fun main()
+    total : int
+    total = combinar(3, 4, true)
+    return total
+end

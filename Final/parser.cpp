@@ -1,6 +1,7 @@
 #include "parser.h"
 using namespace std;
 
+// Inicializa el parser sin tokens pendientes ni traza activa.
 Parser::Parser()
     : currentToken(TK_EOF),
       lookaheadToken(TK_EOF),
@@ -11,7 +12,7 @@ void Parser::setTrace(bool enable) {
     trace = enable;
 }
 
-/* obtiene siguiente token */
+// obtiene siguiente token
 void Parser::nextToken() {
     if (hasLookahead) {
         currentToken = lookaheadToken;
@@ -40,7 +41,7 @@ void Parser::nextToken() {
     }
 }
 
-/* mira el proximo token sin consumirlo */
+// mira el proximo token sin consumirlo
 int Parser::peekToken() {
     if (!hasLookahead) {
         lookaheadToken = yylex();
@@ -52,25 +53,26 @@ int Parser::peekToken() {
     return lookaheadToken;
 }
 
-/* salta saltos de linea */
+// salta saltos de linea
 void Parser::skipNL() {
     while (currentToken == TK_NL)
         nextToken();
 }
 
-/* verifica token esperado */
+// verifica token esperado
 void Parser::match(int expected) {
     if (currentToken == expected)
         nextToken();
     else {
         cerr << "Error sintactico en linea " << yylineno
-             << ": se esperaba token " << expected
-             << " y se encontro '" << currentLexeme << "'\n";
+             << ": se esperaba " << tokenName(expected)
+             << " y se encontro '" << currentLexeme
+             << "' (" << tokenName(currentToken) << ")\n";
         exit(1);
     }
 }
 
-/* helpers */
+// helpers
 bool Parser::is_decl_start() {
     return currentToken == TK_FUN || currentToken == TK_ID;
 }
@@ -132,7 +134,8 @@ const char* Parser::tokenName(int token) const {
     }
 }
 
-/* inicio del analisis */
+// inicio del analisis
+// el archivo y lanza el recorrido recursivo.
 void Parser::parse(const string& filename) {
     yyin = fopen(filename.c_str(), "r");
     if (!yyin) {
@@ -156,14 +159,16 @@ void Parser::parse(const string& filename) {
     fclose(yyin);
 }
 
-/* ---------------- programa ---------------- */
+// programa 
 
+// programa -> decl decl_list
 void Parser::programa() {
     skipNL();
     decl();
     decl_list();
 }
 
+// decl_list -> decl decl_list | epsilon
 void Parser::decl_list() {
     skipNL();
     while (is_decl_start()) {
@@ -177,13 +182,14 @@ void Parser::decl() {
     else globalDecl();
 }
 
-/* ---------------- declaraciones ---------------- */
+// declaraciones 
 
 void Parser::globalDecl() {
     declvar();
 }
 
-/* funcion: fun ID() : tipo  NL  bloque  end NL */
+// funcion: fun ID() : tipo  NL  bloque  end NL 
+// funcion -> 'fun' ID '(' params ')' opt_tipo bloque 'end'
 void Parser::funcion() {
     match(TK_FUN);
     match(TK_ID);
@@ -204,7 +210,7 @@ void Parser::funcion() {
         nextToken();
 }
 
-/* tipo opcional despues de ':' */
+// tipo opcional despues de ':' 
 void Parser::opt_tipo() {
     if (currentToken == TK_COLON) {
         match(TK_COLON);
@@ -212,7 +218,7 @@ void Parser::opt_tipo() {
     }
 }
 
-/* bloque = declaraciones + comandos */
+// bloque = declaraciones + comandos
 void Parser::bloque() {
     skipNL();
     declvar_list();
@@ -220,7 +226,8 @@ void Parser::bloque() {
     comando_list();
 }
 
-/* reconoce declaracion solo si es ID ':' */
+// reconoce declaracion solo si es ID ':' 
+// declvar_list -> declvar declvar_list | epsilon
 void Parser::declvar_list() {
     while (currentToken == TK_ID && peekToken() == TK_COLON) {
         declvar();
@@ -228,6 +235,7 @@ void Parser::declvar_list() {
     }
 }
 
+// params -> parametro params_tail | epsilon
 void Parser::params() {
     if (currentToken == TK_ID) {
         parametro();
@@ -235,6 +243,7 @@ void Parser::params() {
     }
 }
 
+// params_tail -> ',' parametro params_tail | epsilon
 void Parser::params_tail() {
     while (currentToken == TK_COMMA) {
         match(TK_COMMA);
@@ -242,20 +251,22 @@ void Parser::params_tail() {
     }
 }
 
+// parametro -> ID ':' tipo
 void Parser::parametro() {
     match(TK_ID);
     match(TK_COLON);
     tipo();
 }
 
-/* x : int */
+// x : int 
+// declvar -> ID ':' tipo
 void Parser::declvar() {
     match(TK_ID);
     match(TK_COLON);
     tipo();
 }
 
-/* tipo */
+// tipo
 void Parser::tipo() {
     if (currentToken == TK_LBRACKET) {
         match(TK_LBRACKET);
@@ -273,7 +284,7 @@ void Parser::tipobase() {
     }
 }
 
-/* ---------------- comandos ---------------- */
+// comandos 
 
 void Parser::comando_list() {
     skipNL();
@@ -283,6 +294,7 @@ void Parser::comando_list() {
     }
 }
 
+// comando -> if | while | return | asignacion | llamada
 void Parser::comando() {
     if (currentToken == TK_IF) cmdif();
     else if (currentToken == TK_WHILE) cmdwhile();
@@ -294,7 +306,8 @@ void Parser::comando() {
     }
 }
 
-/* if ... end */
+// if ... end
+// cmdif -> 'if' exp bloque else_if_list opt_else 'end'
 void Parser::cmdif() {
     match(TK_IF);
     exp();
@@ -329,7 +342,8 @@ void Parser::opt_else() {
     }
 }
 
-/* while ... loop */
+// while ... loop 
+// cmdwhile -> 'while' exp bloque 'loop'
 void Parser::cmdwhile() {
     match(TK_WHILE);
     exp();
@@ -339,7 +353,7 @@ void Parser::cmdwhile() {
     match(TK_LOOP);
 }
 
-/* return exp? */
+// return exp? 
 void Parser::cmdreturn() {
     match(TK_RETURN);
     if (currentToken != TK_NL &&
@@ -350,7 +364,8 @@ void Parser::cmdreturn() {
         exp();
 }
 
-/* asignacion o llamada */
+// asignacion o llamada
+// cmdatrib -> var '=' exp | llamada
 void Parser::cmdatrib() {
     if (peekToken() == TK_LPAREN) {
         llamada();
@@ -369,7 +384,8 @@ void Parser::cmdatrib() {
     }
 }
 
-/* lista de expresiones */
+// lista de expresiones
+// listaexp -> exp listaexp_tail | epsilon
 void Parser::listaexp() {
     if (currentToken == TK_ID || currentToken == TK_LITNUM ||
         currentToken == TK_LITSTRING || currentToken == TK_TRUE ||
@@ -395,7 +411,7 @@ void Parser::llamada() {
     match(TK_RPAREN);
 }
 
-/* variable con indices */
+// variable con indices 
 void Parser::var() {
     match(TK_ID);
     var_sufijo();
@@ -409,11 +425,11 @@ void Parser::var_sufijo() {
     }
 }
 
-/* ---------------- expresiones ---------------- */
+// expresiones 
 
 void Parser::exp() { exp_or(); }
 
-/* or */
+// or
 void Parser::exp_or() {
     exp_and();
     exp_or_p();
@@ -426,7 +442,7 @@ void Parser::exp_or_p() {
     }
 }
 
-/* and */
+// and
 void Parser::exp_and() {
     exp_eq();
     exp_and_p();
@@ -439,7 +455,7 @@ void Parser::exp_and_p() {
     }
 }
 
-/* == <> */
+// == <>
 void Parser::exp_eq() {
     exp_rel();
     exp_eq_p();
@@ -454,7 +470,7 @@ void Parser::exp_eq_p() {
     }
 }
 
-/* < <= > >= */
+// < <= > >=
 void Parser::exp_rel() {
     exp_add();
     exp_rel_p();
@@ -468,7 +484,7 @@ void Parser::exp_rel_p() {
     }
 }
 
-/* + - */
+// + - 
 void Parser::exp_add() {
     exp_mul();
     exp_add_p();
@@ -481,7 +497,7 @@ void Parser::exp_add_p() {
     }
 }
 
-/* * / */
+// * / 
 void Parser::exp_mul() {
     exp_unary();
     exp_mul_p();
@@ -494,7 +510,7 @@ void Parser::exp_mul_p() {
     }
 }
 
-/* unarios */
+// unarios 
 void Parser::exp_unary() {
     if (currentToken == TK_MINUS || currentToken == TK_NOT) {
         nextToken();
@@ -503,7 +519,7 @@ void Parser::exp_unary() {
     else exp_primary();
 }
 
-/* primarios */
+// primarios 
 void Parser::exp_primary() {
     if (currentToken == TK_LITNUM) match(TK_LITNUM);
     else if (currentToken == TK_LITSTRING) match(TK_LITSTRING);

@@ -3,6 +3,8 @@
 #include "tokens.h"
 %}
 
+%option yylineno
+
 %%
 
 [ \t\r]+                ;

@@ -7,3 +7,4 @@ fun main()
 
     return x
 end
+// ERROR: falta cerrar el if con un end

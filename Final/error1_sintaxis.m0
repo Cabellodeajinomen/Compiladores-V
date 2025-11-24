@@ -6,8 +6,8 @@ fun main()
     y = 20
 
     if x < y
-        x = x +      // ERROR: falta expresion
-    end
+        x = x +      
+    end             // ERROR: falta expresion
 
     return x
 end

@@ -310,15 +310,13 @@ void Parser::cmdif() {
 }
 
 void Parser::else_if_list() {
-    while (currentToken == TK_ELSE) {
+    while (currentToken == TK_ELSE && peekToken() == TK_IF) {
         match(TK_ELSE);
-        if (currentToken == TK_IF) {
-            match(TK_IF);
-            exp();
-            skipNL();
-            bloque();
-            skipNL();
-        } else return;
+        match(TK_IF);
+        exp();
+        skipNL();
+        bloque();
+        skipNL();
     }
 }
 
@@ -448,7 +446,9 @@ void Parser::exp_eq() {
 }
 
 void Parser::exp_eq_p() {
-    while (currentToken == TK_EQ || currentToken == TK_NEQ) {
+    while (currentToken == TK_EQ ||
+           currentToken == TK_NEQ ||
+           currentToken == TK_ASSIGN) {
         nextToken();
         exp_rel();
     }

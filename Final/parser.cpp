@@ -188,6 +188,7 @@ void Parser::funcion() {
     match(TK_FUN);
     match(TK_ID);
     match(TK_LPAREN);
+    params();
     match(TK_RPAREN);
     opt_tipo();
 
@@ -225,6 +226,26 @@ void Parser::declvar_list() {
         declvar();
         skipNL();
     }
+}
+
+void Parser::params() {
+    if (currentToken == TK_ID) {
+        parametro();
+        params_tail();
+    }
+}
+
+void Parser::params_tail() {
+    while (currentToken == TK_COMMA) {
+        match(TK_COMMA);
+        parametro();
+    }
+}
+
+void Parser::parametro() {
+    match(TK_ID);
+    match(TK_COLON);
+    tipo();
 }
 
 /* x : int */
@@ -333,16 +354,12 @@ void Parser::cmdreturn() {
 
 /* asignacion o llamada */
 void Parser::cmdatrib() {
-    match(TK_ID);
-
-    if (currentToken == TK_LPAREN) {
-        match(TK_LPAREN);
-        listaexp();
-        match(TK_RPAREN);
+    if (peekToken() == TK_LPAREN) {
+        llamada();
         return;
     }
 
-    var_sufijo();
+    var();
 
     if (currentToken == TK_ASSIGN) {
         match(TK_ASSIGN);
@@ -371,6 +388,13 @@ void Parser::listaexp_tail() {
         match(TK_COMMA);
         exp();
     }
+}
+
+void Parser::llamada() {
+    match(TK_ID);
+    match(TK_LPAREN);
+    listaexp();
+    match(TK_RPAREN);
 }
 
 /* variable con indices */
@@ -497,7 +521,13 @@ void Parser::exp_primary() {
         exp();
         match(TK_RPAREN);
     }
-    else if (currentToken == TK_ID) var();
+    else if (currentToken == TK_ID) {
+        if (peekToken() == TK_LPAREN) {
+            llamada();
+        } else {
+            var();
+        }
+    }
     else {
         cerr << "Error: expresion invalida\n";
         exit(1);

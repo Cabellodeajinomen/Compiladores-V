@@ -19,43 +19,65 @@ bool Parser::hasErrors() const {
 
 // obtiene siguiente token
 void Parser::nextToken() {
-    if (hasLookahead) {
-        currentToken = lookaheadToken;
-        currentLexeme = lookaheadLexeme;
-        hasLookahead = false;
-    } else {
-        currentToken = yylex();
-        if (currentToken == 0)
-            currentToken = TK_EOF;
-        currentLexeme = yytext ? yytext : "";
-    }
-
-    if (currentToken == TK_EOF)
-        currentLexeme.clear();
-
-    if (trace) {
-        cout << "[TOKEN] " << tokenName(currentToken) << " -> ";
-        if (currentToken == TK_EOF) {
-            cout << "<EOF>";
-        } else if (currentToken == TK_NL) {
-            cout << "\\n";
+    while (true) {
+        if (hasLookahead) {
+            currentToken = lookaheadToken;
+            currentLexeme = lookaheadLexeme;
+            hasLookahead = false;
         } else {
-            cout << currentLexeme;
+            currentToken = yylex();
+            if (currentToken == 0)
+                currentToken = TK_EOF;
+            currentLexeme = yytext ? yytext : "";
         }
-        cout << endl;
+
+        if (currentToken == TK_EOF)
+            currentLexeme.clear();
+
+        if (currentToken == TK_ERROR) {
+            reportError(string("Error lexico en linea ") + to_string(yylineno) +
+                        ": simbolo invalido '" + currentLexeme + "'");
+            hasLookahead = false;
+            continue;
+        }
+
+        if (trace) {
+            cout << "[TOKEN] " << tokenName(currentToken) << " -> ";
+            if (currentToken == TK_EOF) {
+                cout << "<EOF>";
+            } else if (currentToken == TK_NL) {
+                cout << "\\n";
+            } else {
+                cout << currentLexeme;
+            }
+            cout << endl;
+        }
+        break;
     }
 }
 
 // mira el proximo token sin consumirlo
 int Parser::peekToken() {
-    if (!hasLookahead) {
-        lookaheadToken = yylex();
-        if (lookaheadToken == 0)
-            lookaheadToken = TK_EOF;
-        lookaheadLexeme = yytext ? yytext : "";
-        hasLookahead = true;
+    while (true) {
+        if (!hasLookahead) {
+            lookaheadToken = yylex();
+            if (lookaheadToken == 0)
+                lookaheadToken = TK_EOF;
+            lookaheadLexeme = yytext ? yytext : "";
+            if (lookaheadToken == TK_EOF)
+                lookaheadLexeme.clear();
+            hasLookahead = true;
+        }
+
+        if (lookaheadToken == TK_ERROR) {
+            reportError(string("Error lexico en linea ") + to_string(yylineno) +
+                        ": simbolo invalido '" + lookaheadLexeme + "'");
+            hasLookahead = false;
+            continue;
+        }
+
+        return lookaheadToken;
     }
-    return lookaheadToken;
 }
 
 // salta saltos de linea

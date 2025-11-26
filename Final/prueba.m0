@@ -1,4 +1,6 @@
-fun main() : int
+// prueba de programas validos
+
+fun main()
 	x : int
 	y : int
 
@@ -23,15 +25,14 @@ fun crearArreglo(n : int) : int
 	return a
 end
 
-fun main()
-	x : int
-	arr : [ ] int
+fun consumidor()
+	valor : int
+	arreglo : [ ] int
 
-	arr = crearArreglo(10)
+	arreglo = crearArreglo(4)
+	valor = arreglo[0] + 7
 
-	x = arr[0] + 5
-
-	return x
+	return valor
 end
 
 fun procesar(nombre : string) : string
@@ -60,47 +61,32 @@ fun combinar(a : int, b : int, flag : bool) : int
 	return resultado
 end
 
-fun main()
-	total : int
-	total = combinar(3, 4, true)
-	return total
-end
-
 fun inicializar(m : [ ] [ ] int)
 	m[0][0] = 1
 	m[0][1] = 2
 	return
 end
 
-fun main()
-	matriz : [ ] [ ] int
-	inicializar(matriz)
+// prueba de programas invalidos
+
+fun err_missing_expr()
+	x : int
+	x = 10
+
+	if x < 20
+		x = x +
+	end
+
 	return
 end
 
-fun main()
+fun err_invalid_token()
 	x : int
-	y : int
-
-	x = 10
-	y = 20
-
-	if x < y
-		x = x +      // ERROR: falta expresion
-	end
-
+	x = 10 & 5
 	return x
 end
 
-fun main()
-	x : int
-
-	x = 10 & 5   // ERROR: & no es un token permitido
-
-	return x
-end
-
-fun main()
+fun err_missing_end_if()
 	x : int
 	x = 5
 
@@ -109,9 +95,8 @@ fun main()
 
 	return x
 end
-// ERROR: falta cerrar el if con un end
 
-fun main()
+fun err_missing_loop()
 	x : int
 	x = 0
 
@@ -120,24 +105,22 @@ fun main()
 
 	return x
 end
-//ERROR: falta cerrar el while con un loop
 
-fun main()
+fun err_double_operator()
 	x : int
-	x = 10 + * 3    // ERROR: operador doble no valido
-
+	x = 10 + * 3
 	return x
 end
 
-fun sumar(a : int b : int) : int            // ERROR: falta coma entre los parametros
-	return a + b    
+fun err_params_comma(a : int b : int) : int
+	return a + b
 end
 
-fun main()
+fun err_incomplete_and()
 	cond : bool
 
-	if cond and             
-		return          // ERROR: falta segundo operador despues del and
+	if cond and
+		return
 	end
 
 	return

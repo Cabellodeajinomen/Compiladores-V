@@ -3,6 +3,7 @@
 
 #include <string>
 #include <iostream>
+#include <initializer_list>
 #include "tokens.h"
 
 using namespace std;
@@ -18,12 +19,14 @@ public:
     Parser();
     void parse(const string& filename);
     void setTrace(bool enable);
+    bool hasErrors() const;
 
 private:
     int currentToken; // aqui guardamos el tipo de token actual (TokenType)
     int lookaheadToken; // buffer para lookahead simple
     bool hasLookahead;
     bool trace;
+    bool hadError;
     std::string currentLexeme;
     std::string lookaheadLexeme;
 
@@ -31,6 +34,8 @@ private:
     int peekToken();
     void match(int expected);
     void skipNL();
+    void reportError(const std::string& message);
+    void synchronize(std::initializer_list<int> recoveryTokens);
 
     // No terminales principales
     void programa();

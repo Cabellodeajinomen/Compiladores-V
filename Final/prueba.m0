@@ -1,0 +1,144 @@
+fun main() : int
+	x : int
+	y : int
+
+	x = 5
+	y = 10
+
+	if x < y
+		x = x + 1
+	end
+
+	while x < 20
+		x = x + 2
+	loop
+
+	return x
+end
+
+fun crearArreglo(n : int) : int
+	a : [ ] int
+
+	a = new [ n ] int
+	return a
+end
+
+fun main()
+	x : int
+	arr : [ ] int
+
+	arr = crearArreglo(10)
+
+	x = arr[0] + 5
+
+	return x
+end
+
+fun procesar(nombre : string) : string
+	mensaje : string
+
+	if nombre = "Alex"
+		mensaje = "Hola Alex"
+	else if nombre = "Bryan"
+		mensaje = "Hola Bryan"
+	else
+		mensaje = "Desconocido"
+	end
+
+	return mensaje
+end
+
+fun combinar(a : int, b : int, flag : bool) : int
+	resultado : int
+
+	if flag and not (a = b)
+		resultado = a + b
+	else
+		resultado = a - b
+	end
+
+	return resultado
+end
+
+fun main()
+	total : int
+	total = combinar(3, 4, true)
+	return total
+end
+
+fun inicializar(m : [ ] [ ] int)
+	m[0][0] = 1
+	m[0][1] = 2
+	return
+end
+
+fun main()
+	matriz : [ ] [ ] int
+	inicializar(matriz)
+	return
+end
+
+fun main()
+	x : int
+	y : int
+
+	x = 10
+	y = 20
+
+	if x < y
+		x = x +      // ERROR: falta expresion
+	end
+
+	return x
+end
+
+fun main()
+	x : int
+
+	x = 10 & 5   // ERROR: & no es un token permitido
+
+	return x
+end
+
+fun main()
+	x : int
+	x = 5
+
+	if x > 0
+		x = x + 1
+
+	return x
+end
+// ERROR: falta cerrar el if con un end
+
+fun main()
+	x : int
+	x = 0
+
+	while x < 5
+		x = x + 1
+
+	return x
+end
+//ERROR: falta cerrar el while con un loop
+
+fun main()
+	x : int
+	x = 10 + * 3    // ERROR: operador doble no valido
+
+	return x
+end
+
+fun sumar(a : int b : int) : int            // ERROR: falta coma entre los parametros
+	return a + b    
+end
+
+fun main()
+	cond : bool
+
+	if cond and             
+		return          // ERROR: falta segundo operador despues del and
+	end
+
+	return
+end

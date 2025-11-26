@@ -23,6 +23,5 @@ int main(int argc, char* argv[]) {
         p.setTrace(true);
 
     p.parse(filename);
-
-    return 0;
+    return p.hasErrors() ? 1 : 0;
 }

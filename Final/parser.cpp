@@ -3,13 +3,18 @@ using namespace std;
 
 // Inicializa el parser sin tokens pendientes ni traza activa.
 Parser::Parser()
-    : currentToken(TK_EOF),
-      lookaheadToken(TK_EOF),
-      hasLookahead(false),
-      trace(false) {}
+        : currentToken(TK_EOF),
+            lookaheadToken(TK_EOF),
+            hasLookahead(false),
+            trace(false),
+            hadError(false) {}
 
 void Parser::setTrace(bool enable) {
     trace = enable;
+}
+
+bool Parser::hasErrors() const {
+    return hadError;
 }
 
 // obtiene siguiente token
@@ -59,16 +64,46 @@ void Parser::skipNL() {
         nextToken();
 }
 
+void Parser::reportError(const std::string& message) {
+    hadError = true;
+    cerr << message << endl;
+}
+
+void Parser::synchronize(std::initializer_list<int> recoveryTokens) {
+    if (currentToken == TK_EOF)
+        return;
+
+    while (currentToken != TK_EOF) {
+        for (int token : recoveryTokens) {
+            if (currentToken == token) {
+                return;
+            }
+        }
+
+        if (currentToken == TK_NL) {
+            nextToken();
+            return;
+        }
+
+        nextToken();
+    }
+}
+
 // verifica token esperado
 void Parser::match(int expected) {
     if (currentToken == expected)
         nextToken();
     else {
-        cerr << "Error sintactico en linea " << yylineno
-             << ": se esperaba " << tokenName(expected)
-             << " y se encontro '" << currentLexeme
-             << "' (" << tokenName(currentToken) << ")\n";
-        exit(1);
+        reportError(string("Error sintactico en linea ") + to_string(yylineno) +
+                     ": se esperaba " + tokenName(expected) +
+                     " y se encontro '" + currentLexeme +
+                     "' (" + tokenName(currentToken) + ")");
+
+        synchronize({expected, TK_END, TK_ELSE, TK_LOOP, TK_FUN, TK_RETURN,
+                     TK_IF, TK_WHILE, TK_RPAREN, TK_RBRACKET, TK_COMMA, TK_NL});
+
+        if (currentToken == expected)
+            nextToken();
     }
 }
 
@@ -151,11 +186,16 @@ void Parser::parse(const string& filename) {
     programa();
 
     if (currentToken != TK_EOF) {
-        cerr << "Error: tokens extra despues del programa\n";
-        exit(1);
+        reportError(string("Error sintactico en linea ") + to_string(yylineno) +
+                     ": tokens extra despues del programa");
+        while (currentToken != TK_EOF)
+            nextToken();
     }
 
-    cout << "Analisis sintactico exitoso\n";
+    if (!hadError)
+        cout << "Analisis sintactico exitoso\n";
+    else
+        cerr << "Analisis completado con errores\n";
     fclose(yyin);
 }
 
@@ -279,8 +319,10 @@ void Parser::tipobase() {
     if (is_type_start())
         nextToken();
     else {
-        cerr << "Error: tipo base esperado\n";
-        exit(1);
+        reportError(string("Error sintactico en linea ") + to_string(yylineno) +
+                     ": tipo base esperado");
+        synchronize({TK_COMMA, TK_RPAREN, TK_END, TK_ELSE, TK_LOOP,
+                     TK_NL, TK_ASSIGN, TK_RBRACKET});
     }
 }
 
@@ -301,8 +343,9 @@ void Parser::comando() {
     else if (currentToken == TK_RETURN) cmdreturn();
     else if (currentToken == TK_ID) cmdatrib();
     else {
-        cerr << "Error: comando invalido\n";
-        exit(1);
+        reportError(string("Error sintactico en linea ") + to_string(yylineno) +
+                     ": comando invalido");
+        synchronize({TK_NL, TK_END, TK_ELSE, TK_LOOP, TK_FUN, TK_EOF});
     }
 }
 
@@ -379,8 +422,9 @@ void Parser::cmdatrib() {
         exp();
     }
     else {
-        cerr << "Error: se esperaba '=' o llamada\n";
-        exit(1);
+        reportError(string("Error sintactico en linea ") + to_string(yylineno) +
+                     ": se esperaba '=' o una llamada a funcion");
+        synchronize({TK_NL, TK_END, TK_ELSE, TK_LOOP, TK_FUN, TK_EOF});
     }
 }
 
@@ -545,7 +589,9 @@ void Parser::exp_primary() {
         }
     }
     else {
-        cerr << "Error: expresion invalida\n";
-        exit(1);
+        reportError(string("Error sintactico en linea ") + to_string(yylineno) +
+                     ": expresion invalida");
+        synchronize({TK_COMMA, TK_RPAREN, TK_RBRACKET, TK_END, TK_ELSE,
+                     TK_LOOP, TK_NL, TK_EOF});
     }
 }
